@@ -1,5 +1,9 @@
 *.xml
 *.pyc
+*.pyo
 *~
+~*
+*.swp
 tmp
 .DS_Store
+
