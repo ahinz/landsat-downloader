@@ -7,6 +7,16 @@ from scripts import xml_downloader
 from bs4 import BeautifulSoup
 
 
+def get_latlon_minmax(yxlist):
+    """
+    Given a list of 1 or more lat-lon coordinates, returns [(lon_min, lat_min), (lon_max, lat_max)]
+    """
+    lon_min = min(yxlist, key=lambda p: p[0])[0]
+    lat_min = min(yxlist, key=lambda p: p[1])[1]
+    lon_max = max(yxlist, key=lambda p: p[0])[0]
+    lat_max = max(yxlist, key=lambda p: p[1])[1]
+    return [(lon_min, lat_min), (lon_max, lat_max)]
+
 def get_xml_boundary(path):
     """
     Returns the boundary defined in an xml metadata file, or None if an error occurs
