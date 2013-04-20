@@ -123,7 +123,7 @@ def list_sets(args):
     if args.dataset:
         data = adict[args.dataset]
     else:
-        data = adict.keys
+        data = adict.keys()
 
     print '\n'.join(["%03d %s" % (a,b) for (a,b) in zip(range(0,len(adict.keys())), data)])
 
