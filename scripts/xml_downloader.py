@@ -7,8 +7,6 @@ from multiprocessing import Pool
 import os
 import cPickle as pickle
 
-mcd_top = 'http://e4ftl01.cr.usgs.gov/MODIS_Composites/MOTA/'
-
 def url_finder(url, regex):
     page = urllib2.urlopen(url)
     html = page.read()
@@ -16,7 +14,7 @@ def url_finder(url, regex):
     soup = BeautifulSoup(html)
     for tag in soup.findAll('a', href=True):
         if re.search(regex, tag['href']):
-            links.append(url+tag['href'])
+            links.append(tag['href'])
     return links
 
 def file_diff(file1, file2):
@@ -51,7 +49,6 @@ def main():
     for l in mcd_links:
         name = l.split('/')[-2]
         mcd_dict[name] = []
-        mcd_dict[name].append(l)
     print "Found {0} MCD links".format(len(mcd_links))
     print mcd_dict
     print "Getting Year links"
