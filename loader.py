@@ -4,9 +4,9 @@ import os
 import hashlib
 
 def get_tile_names(*args, **kwargs):
-    return ["http://e4ftl01.cr.usgs.gov/MODIS_Composites/MOTA/MCD12Q1.005/2002.01.01/MCD12Q1.A2002001.h00v08.005.2011090163104.hdf",
-            "http://e4ftl01.cr.usgs.gov/MODIS_Composites/MOTA/MCD12Q1.005/2002.01.01/MCD12Q1.A2002001.h00v09.005.2011090163209.hdf",
-            "http://e4ftl01.cr.usgs.gov/MODIS_Composites/MOTA/MCD12Q1.005/2002.01.01/MCD12Q1.A2002001.h10v08.005.2011090163708.hdf"
+    return [ "http://e4ftl01.cr.usgs.gov/MODIS_Composites/MOTA/MCD12Q1.005/2002.01.01/MCD12Q1.A2002001.h10v08.005.2011090163708.hdf",
+             "http://e4ftl01.cr.usgs.gov/MODIS_Composites/MOTA/MCD12Q1.005/2002.01.01/MCD12Q1.A2002001.h10v07.005.2011090163853.hdf",
+             "http://e4ftl01.cr.usgs.gov/MODIS_Composites/MOTA/MCD12Q1.005/2002.01.01/MCD12Q1.A2002001.h11v07.005.2011090163921.hdf"
             ]
 
 verbose = True
@@ -76,6 +76,21 @@ def colorize(tiles):
 
     return outputs
 
+def mergeit(tiles):
+    outputpath,filename = os.path.split(tiles[0])
+
+    outputsha = hashlib.md5("|".join(tiles)).hexdigest()
+    outputfile_tmpl = os.path.join(outputpath, "%s__%s.%%s" % (filename.split('.')[0],outputsha))
+
+    vrtfile = outputfile_tmpl % 'vrt'
+    tiffile = outputfile_tmpl % 'tif'
+    
+    if not os.path.exists(tiffile):
+        check_call(['gdalbuildvrt', vrtfile] + tiles)
+        check_call(['gdal_translate','-of', 'GTiff', vrtfile, tiffile])
+
+    return [tiffile]
+
 def main():
     tiles = get_tile_names()
 
@@ -88,14 +103,11 @@ def main():
     band = 'HDF4_EOS:EOS_GRID:"%s":MOD12Q1:Land_Cover_Type_1'
     bandtifs = extract_bands(rawhdfs, band)
 
-#    gdalwarp -t_srs EPSG:3857 -dstnodata 128 MCD12Q1.A2001001.h12v12.051.Land_Cover_Type_1.tif land_cover_2001.tif
-
-## create an ARG from geotiff
-#gdal_translate -of ARG land_cover_2001.tif land_cover_2001.arg 
-
     print bandtifs
 
-    reprojs = reproject(bandtifs)
+    joinedtifs = mergeit(bandtifs)
+
+    reprojs = reproject(joinedtifs)
     print reprojs
 
     colors = colorize(reprojs)
