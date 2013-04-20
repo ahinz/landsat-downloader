@@ -34,8 +34,13 @@ def check_exists(f):
     else:
         os.system('touch {0}'.format(f))
 
-if __name__ == '__main__':
+def get_dict():
+    if os.path.exists('./mcd_output.p'):
+        return pickle.load(open('mcd_output.p', 'rb'))
+    else:
+        return main()
 
+def main():
     # Get links for all MCD Directories #
     print "Getting MCD links"
     mota = 'http://e4ftl01.cr.usgs.gov/MODIS_Composites/MOTA/'
@@ -56,4 +61,9 @@ if __name__ == '__main__':
 
     mcd_output = open('./mcd_output.p', 'wb')
     pickle.dump(mcd_dict, mcd_output)
+
+    return mcd_dict
     
+
+if __name__ == '__main__':
+    main()
