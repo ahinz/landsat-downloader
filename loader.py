@@ -121,11 +121,20 @@ def main():
 def list_sets(args):
     adict = xml_downloader.get_dict()
     if args.dataset:
-        data = adict[args.dataset]
+        try:
+            data = adict[adict.keys()[int(args.dataset)]]
+        except:
+            matches = filter(lambda z: z.startswith(args.dataset), adict.keys())
+            if len(matches) == 1:
+                data = adict[matches[0]]
+            else:
+                print "Too many matches:"
+                print '\n'.join(matches)
+                exit(1)
     else:
         data = adict.keys()
 
-    print '\n'.join(["%03d %s" % (a,b) for (a,b) in zip(range(0,len(adict.keys())), data)])
+    print '\n'.join(["%03d:  %s" % (a,b) for (a,b) in zip(range(0,len(adict.keys())), data)])
 
 if __name__=='__main__':
     #adict = xml_downloader.get_dict()
