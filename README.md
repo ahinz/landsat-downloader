@@ -1,5 +1,7 @@
 README
 
+You have to have curl, gdal-bin, and python-gdal installed
+
 ```
 $ landsat search land cover
 MCD12Q1.005 --- LAND COVER TYPE
