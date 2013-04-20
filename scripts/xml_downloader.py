@@ -20,16 +20,23 @@ def url_finder(url, regex):
 if __name__ == '__main__':
 
     # Get links for all MCD Directories #
+    print "Getting MCD links"
     mcd_links = url_finder('http://e4ftl01.cr.usgs.gov/MODIS_Composites/MOTA/', 'MCD')
-
+    print "Found {0} MCD links".format(mcd_links)
     year_links = []
-    for l in mcd_links:
+
+    print "Getting Year links"
+    for counter, l in enumerate(mcd_links):
+        print counter
         year_links += url_finder(l, '\d+')
 
     print "Finished getting year links"
 
+    print "Finding all XML links"
     xml_links = []
-    for y in year_links:
+    
+    for counter, y in enumerate(year_links):
+        print counter
         xml_links += url_finder(y, 'xml$')
 
     print "Need to download {0} XML files".format(len(xml_links))
