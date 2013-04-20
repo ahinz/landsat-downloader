@@ -3,8 +3,30 @@ from subprocess import check_call
 import os
 import hashlib
 import argparse
-
 from scripts import xml_downloader
+from bs4 import BeautifulSoup
+
+
+def get_xml_boundary(path):
+    """
+    Returns the boundary defined in an xml metadata file, or None if an error occurs
+    Result is an array of four (lon, lat) tuples corresponding to the corners of the boundary
+    path:   The path to the xml file to read
+    """
+    try:
+        with open(path, 'r') as f:
+            # Sample path:
+            # //GranuleURMetaData//SpatialDomainContainer//HorizontalSpatialDomainContainer//
+            #   GPolygon//Boundary//Point//Point{Longitude,Latitude}
+            xml_tree = BeautifulSoup(f, 'xml')
+            bb = xml_tree.SpatialDomainContainer.HorizontalSpatialDomainContainer.GPolygon.Boundary
+            points_raw = [(p.PointLongitude, p.PointLatitude) for p in bb.findChildren('Point')]
+            points = [(float(lon.contents[0]), float(lat.contents[0])) for lon, lat in points_raw]
+            return points
+    except Exception as e:
+        # Debug
+        print(e)
+        return None
 
 def get_tile_names(*args, **kwargs):
     return [ "http://e4ftl01.cr.usgs.gov/MODIS_Composites/MOTA/MCD12Q1.005/2002.01.01/MCD12Q1.A2002001.h10v08.005.2011090163708.hdf",
