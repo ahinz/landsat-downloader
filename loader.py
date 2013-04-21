@@ -36,14 +36,60 @@ def get_xml_boundary(path):
             return points
     except Exception as e:
         # Debug
-        print(e)
+        print("Exception: %s" % e)
         return None
 
-def get_tile_names(*args, **kwargs):
-    return [ "http://e4ftl01.cr.usgs.gov/MODIS_Composites/MOTA/MCD12Q1.005/2002.01.01/MCD12Q1.A2002001.h10v08.005.2011090163708.hdf",
-             "http://e4ftl01.cr.usgs.gov/MODIS_Composites/MOTA/MCD12Q1.005/2002.01.01/MCD12Q1.A2002001.h10v07.005.2011090163853.hdf",
-             "http://e4ftl01.cr.usgs.gov/MODIS_Composites/MOTA/MCD12Q1.005/2002.01.01/MCD12Q1.A2002001.h11v07.005.2011090163921.hdf"
-            ]
+def get_tile_names2(latmin,lngmin,latmax,lngmax):
+    dataset = 'MCD12Q1.005'
+    date = '2002.01.01'
+
+    xmlfiles = dl_xml.download_xml(dataset, date)
+    selected = []
+    for xmlfile in xmlfiles:
+        bb = get_xml_boundary(xmlfile)
+        (bb_lon_min, bb_lat_min), (bb_lon_max, bb_lat_max) = get_latlon_minmax(bb)
+        if (latmax > bb_lat_min and latmin < bb_lat_max and
+            lngmax > bb_lon_min and lngmin < bb_lon_max):
+            _, xmlfile = os.path.split(xmlfile)
+            selected.append('http://e4ftl01.cr.usgs.gov/MODIS_Composites/MOTA/%s/%s/%s' %
+                            (dataset, date, '.'.join(xmlfile.split('.')[:-1])))
+
+    return selected
+
+def get_tile_names(latmin,lngmin,latmax,lngmax):
+    dataset = 'MCD12Q1.005'
+    date = '2002.01.01'
+
+    import pyproj
+    p = pyproj.Proj("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
+    xmin,ymin = p(lngmin, latmin)
+    xmax,ymax = p(lngmax, latmax)
+
+    tilewidth = 1111950.5196666666
+    xoffset = -20015109.354
+    yoffset = -10007554.677
+
+    xtilemin = int((xmin - xoffset) / tilewidth)
+    ytilemin = 17 - int((ymax - yoffset) / tilewidth)
+
+    xtilemax = int((xmax - xoffset) / tilewidth)
+    ytilemax = 17 - int((ymin - yoffset) / tilewidth)
+
+    xmlfiles = dl_xml.download_xml(dataset, date)
+
+    tiles = []
+    for x in range(xtilemin, xtilemax+1):
+        for y in range(ytilemin, ytilemax+1):
+            s = '.h%02dv%02d.' % (x,y)
+            for xmlfile in xmlfiles:
+                if s in xmlfile:
+                    _, filename = os.path.split(xmlfile)
+                    tiles.append('http://e4ftl01.cr.usgs.gov/MODIS_Composites/MOTA/%s/%s/%s' %
+                                 (dataset, date, '.'.join(filename.split('.')[:-1])))
+                    break
+
+    return tiles
+
 
 verbose = True
 def vprint(arg):
@@ -127,8 +173,25 @@ def mergeit(tiles):
 
     return [tiffile]
 
+def clipit(tiles):
+    outputs = []
+    extent = ['-8434677', '4971129', '-8248774', '4734571']
+    #extent = ['-75.77','39.09','-74.10','40.72']
+
+    for tile in tiles:
+        filepath,filename = os.path.split(tile)
+        outputfile = '.'.join(filename.split('.')[0:-1]) + '__clipped.tif'
+        outputpath = os.path.join(filepath,outputfile)
+        outputs.append(outputpath)
+
+        if not os.path.exists(outputpath):
+            check_call(['gdal_translate', '-projwin'] + extent + [tile, outputpath])
+
+    return outputs
+
+
 def main():
-    tiles = get_tile_names()
+    tiles = get_tile_names(39.09, -75.77, 40.72, -74.10)
 
     # Download the tiles of DOOM
     rawhdfs = download(tiles)
@@ -146,8 +209,12 @@ def main():
     reprojs = reproject(joinedtifs)
     print reprojs
 
+    # COLORIZE FIRST, *THEN* reproject
     colors = colorize(reprojs)
     print colors
+
+    clips = clipit(colors)
+    print clips
 
 
 # sub-command functions
@@ -197,4 +264,8 @@ if __name__=='__main__':
 
     # parse the args and call whatever function was selected
     args = parser.parse_args()
-    args.func(args)
+    #args.func(args)
+
+    main()
+    #tiles = get_tile_names(39.09, -75.77, 40.72, -74.10)
+    #print tiles
