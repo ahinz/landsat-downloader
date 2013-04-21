@@ -16,6 +16,8 @@ def download_xml(dataset, year):
     xml_links = url_finder(url, 'xml$')
     print "Found {0} XML links".format(len(xml_links))
 
+    return xml_links
+
     paths = []
     missing = False
     for l in xml_links:

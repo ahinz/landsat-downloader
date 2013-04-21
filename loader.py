@@ -3,10 +3,10 @@ from subprocess import check_call
 import os
 import hashlib
 import argparse
+import pyproj
 from scripts import xml_downloader
 from scripts import dl_xml
 from bs4 import BeautifulSoup
-
 
 def get_latlon_minmax(yxlist):
     """
@@ -39,31 +39,16 @@ def get_xml_boundary(path):
         print("Exception: %s" % e)
         return None
 
-def get_tile_names2(latmin,lngmin,latmax,lngmax):
-    dataset = 'MCD12Q1.005'
-    date = '2002.01.01'
+def get_tile_names(dataset, date, latmin,lngmin,latmax,lngmax):
 
-    xmlfiles = dl_xml.download_xml(dataset, date)
-    selected = []
-    for xmlfile in xmlfiles:
-        bb = get_xml_boundary(xmlfile)
-        (bb_lon_min, bb_lat_min), (bb_lon_max, bb_lat_max) = get_latlon_minmax(bb)
-        if (latmax > bb_lat_min and latmin < bb_lat_max and
-            lngmax > bb_lon_min and lngmin < bb_lon_max):
-            _, xmlfile = os.path.split(xmlfile)
-            selected.append('http://e4ftl01.cr.usgs.gov/MODIS_Composites/MOTA/%s/%s/%s' %
-                            (dataset, date, '.'.join(xmlfile.split('.')[:-1])))
-
-    return selected
-
-def get_tile_names(latmin,lngmin,latmax,lngmax):
-    dataset = 'MCD12Q1.005'
-    date = '2002.01.01'
-
-    import pyproj
     p = pyproj.Proj("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
     xmin,ymin = p(lngmin, latmin)
     xmax,ymax = p(lngmax, latmax)
+
+    if xmin > xmax:
+        t = xmax
+        xmax = xmin
+        xmin = t
 
     tilewidth = 1111950.5196666666
     xoffset = -20015109.354
@@ -173,10 +158,8 @@ def mergeit(tiles):
 
     return [tiffile]
 
-def clipit(tiles):
+def clipit(tiles, extent):
     outputs = []
-    extent = ['-8434677', '4971129', '-8248774', '4734571']
-    #extent = ['-75.77','39.09','-74.10','40.72']
 
     for tile in tiles:
         filepath,filename = os.path.split(tile)
@@ -184,38 +167,56 @@ def clipit(tiles):
         outputpath = os.path.join(filepath,outputfile)
         outputs.append(outputpath)
 
+        xmin,ymin,xmax,ymax = extent
+        extent = [xmin,ymax,xmax,ymin]
+
         if not os.path.exists(outputpath):
-            check_call(['gdal_translate', '-projwin'] + extent + [tile, outputpath])
+            check_call(['gdal_translate', '-projwin'] + map(str,extent) + [tile, outputpath])
 
     return outputs
 
 
-def main():
-    tiles = get_tile_names(39.09, -75.77, 40.72, -74.10)
+def process(dataset, date, extent_ll):
+    #extent_ll = ['39.09','-75.77','40.72','-74.10']
+
+    p = pyproj.Proj('+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +a=6378137 +b=6378137 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs')
+    xmin,ymin = p(extent_ll[1], extent_ll[0])
+    xmax,ymax = p(extent_ll[3], extent_ll[2])
+    extent = map(int,[xmin,ymin,xmax,ymax]) #['-8434677', '4971129', '-8248774', '4734571']
+
+    #dataset = 'MCD12Q1.005'
+    #date = '2002.01.01'
+
+    tiles = get_tile_names(dataset, date, *extent_ll)
 
     # Download the tiles of DOOM
     rawhdfs = download(tiles)
 
-    print rawhdfs
+    print "Extracting bands"
 
     # Extract relevant band
     band = 'HDF4_EOS:EOS_GRID:"%s":MOD12Q1:Land_Cover_Type_1'
     bandtifs = extract_bands(rawhdfs, band)
 
-    print bandtifs
+    print "Merging bands into single image"
 
     joinedtifs = mergeit(bandtifs)
 
+    print "Reprojecting to EPSG900913"
+
     reprojs = reproject(joinedtifs)
-    print reprojs
 
-    # COLORIZE FIRST, *THEN* reproject
+    print "Colorzing..."
+
     colors = colorize(reprojs)
-    print colors
 
-    clips = clipit(colors)
-    print clips
+    print "Clipping to your bounding box..."
 
+    clips = clipit(colors, extent)
+
+    print "Done!"
+
+    return clips
 
 # sub-command functions
 def list_sets(args):
@@ -237,6 +238,7 @@ def list_sets(args):
         dates = adict[dataset]
 
         if args.date in dates:
+            print "Downloading metadata xml..."
             dl_xml.download_xml(dataset, args.date)
         else:
             print "That date wasn't found"
@@ -247,6 +249,37 @@ def list_sets(args):
             data = adict.keys()
 
         print '\n'.join(["%03d:  %s" % (a,b) for (a,b) in zip(range(0,len(adict.keys())), data)])
+
+def download_entry(args):
+    dataset = args.dataset
+    dates = args.date
+    extent = args.bbox
+
+    # Some hanky-panky goes on... don't let it screw us over
+    pwd = os.getcwd()
+
+    tiles = []
+    for date in dates:
+        tiles += get_tile_names(dataset, date, *extent)
+
+    print "Dataset: %s\nDates: %s\nTiles to Download:" % (dataset, ','.join(dates))
+    print "\n".join(tiles)
+
+    if args.info:
+        return
+
+    print "Starting download"
+    results = []
+    for date in dates:
+        print "Processing date: %s" % date
+        results += process(dataset, date, extent)
+        os.chdir(pwd)
+
+    print "Processs tiles"
+    if args.tiles:
+        for (result,date) in zip(results, dates):
+            tile = args.tiles[0]
+            check_call(['gdal2tiles.py','-z'] + args.zoom + [result] + [tile + '/' + date])
 
 if __name__=='__main__':
     #adict = xml_downloader.get_dict()
@@ -262,10 +295,17 @@ if __name__=='__main__':
     parser_list.add_argument('date', type=str, nargs='?')
     parser_list.set_defaults(func=list_sets)
 
+    # create the parser for the "list" command
+    parser_dl = subparsers.add_parser('download')
+    parser_dl.add_argument('--dataset', type=str)
+    parser_dl.add_argument('--date', type=str, nargs='+')
+    parser_dl.add_argument('--tiles', type=str, nargs=1)
+    parser_dl.add_argument('--zoom', type=str, nargs=1)
+    parser_dl.add_argument('--bbox', type=str, nargs=4)    
+    parser_dl.add_argument('--info', action='store_true')
+    parser_dl.set_defaults(func=download_entry)
+
     # parse the args and call whatever function was selected
     args = parser.parse_args()
-    #args.func(args)
+    args.func(args)
 
-    main()
-    #tiles = get_tile_names(39.09, -75.77, 40.72, -74.10)
-    #print tiles
