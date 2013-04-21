@@ -36,3 +36,40 @@ $ python loader.py download
       
 Creates zoom levels 3-8 in the "tiles" directory
 ```
+
+Full help for info:
+```
+usage: loader.py info [-h] [dataset] [date]
+
+positional arguments:
+  dataset
+  date
+
+optional arguments:
+  -h, --help  show this help message and exit
+
+usage: loader.py info [-h] [dataset] [date]
+
+positional arguments:
+  dataset
+  date
+
+optional arguments:
+  -h, --help  show this help message and exit
+```
+
+Full help for download:
+```
+usage: loader.py download [-h] [--dataset DATASET] [--date DATE [DATE ...]]
+                          [--tiles TILES] [--zoom ZOOM]
+                          [--bbox BBOX BBOX BBOX BBOX] [--info]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --dataset DATASET
+  --date DATE [DATE ...]
+  --tiles TILES
+  --zoom ZOOM
+  --bbox BBOX BBOX BBOX BBOX
+  --info
+```
