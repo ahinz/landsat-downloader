@@ -1,6 +1,7 @@
 *.xml
 *.pyc
 *.pyo
+*.p
 *~
 ~*
 *.swp
