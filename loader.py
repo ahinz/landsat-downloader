@@ -129,7 +129,8 @@ def reproject(tiles):
 
     return outputs
 
-def colorize(tiles):
+
+def colorize(tiles, colors='../colors.txt'):
     outputs = []
 
     for tile in tiles:
@@ -139,7 +140,7 @@ def colorize(tiles):
         outputs.append(outputpath)
 
         if not os.path.exists(outputfile):
-            check_call(['gdaldem','color-relief',tile,'colors.txt', outputfile])
+            check_call(['gdaldem', 'color-relief', tile, colors, outputfile])
 
     return outputs
 
