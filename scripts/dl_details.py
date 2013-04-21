@@ -36,3 +36,4 @@ for counter, k in enumerate(description_dict.keys()):
 
 output = open('./description_of_maps.p', 'wb')
 pickle.dump(description_dict, output)
+output.close()
