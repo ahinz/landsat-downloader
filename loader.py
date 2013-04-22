@@ -6,6 +6,7 @@ import argparse
 import pyproj
 from scripts import xml_downloader
 from scripts import dl_xml
+from scripts.get_bands import user_select_band
 from bs4 import BeautifulSoup
 
 def get_latlon_minmax(yxlist):
@@ -98,12 +99,12 @@ def download(tiles):
 
     return outputs
 
-def extract_bands(tiles, bandtmpl):
+def extract_bands(tiles):
     outputs = []
-
+    band_selection = None
     for tile in tiles:
+        band_selection, band = user_select_band(tile, band_selection)
         filepath,filename = os.path.split(tile)
-        band = bandtmpl % filename
         bandsha1 = hashlib.md5(band).hexdigest()
 
         outputfile = '.'.join(filename.split('.')[0:-1]) + '__%s.tif' % bandsha1
@@ -193,11 +194,10 @@ def process(dataset, date, extent_ll):
     # Download the tiles of DOOM
     rawhdfs = download(tiles)
 
-    print "Extracting bands"
+    print "Select bands"
 
     # Extract relevant band
-    band = 'HDF4_EOS:EOS_GRID:"%s":MOD12Q1:Land_Cover_Type_1'
-    bandtifs = extract_bands(rawhdfs, band)
+    bandtifs = extract_bands(rawhdfs)
 
     print "Merging bands into single image"
 
