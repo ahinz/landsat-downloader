@@ -6,7 +6,8 @@ import argparse
 import pyproj
 from scripts import xml_downloader
 from scripts import dl_xml
-from scripts.get_bands import user_select_band
+from scripts.get_bands import select_band
+from scripts.get_metadata import product_dates, product_bands, band_color_definitions
 from bs4 import BeautifulSoup
 
 def get_latlon_minmax(yxlist):
