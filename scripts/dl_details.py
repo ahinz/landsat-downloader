@@ -9,10 +9,10 @@ import sys, os
 def dl_details():
 
     """Downloads details on available MODIS data. Creates and saves
-    a dictionary with:
+    a nested dictionary with:
 
     keys = MODIS data name (e.g. MCD12Q1)
-    values = list of url, title, and detailed description"""
+    values = Dictionary with keys 'url', 'description', 'title'"""
     
     if os.path.isfile('./description_of_maps.json'):
         print "Already downloaded file descriptions"
