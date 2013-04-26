@@ -38,10 +38,9 @@ def dl_details():
             try:
                 band = row.find('td').text.strip()
                 band_dict[m].append(band)
-                print band
             except:
                 print "No bands for {0} ({1})".format(m, d_dict[m][0])
-            output = open('./bands.p', 'wb')
+        output = open('./bands.p', 'wb')
         pickle.dump(band_dict, output)
         output.close()
 
