@@ -255,7 +255,8 @@ def download_entry(args):
     dataset = args.dataset
     dates = args.date
     extent = args.bbox
-
+    bandid = args.band
+    
     # Some hanky-panky goes on... don't let it screw us over
     pwd = os.getcwd()
 
