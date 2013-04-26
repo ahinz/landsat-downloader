@@ -283,7 +283,7 @@ def download_entry(args):
     results = []
     for date in dates:
         print "Processing date: %s" % date
-        results += process(dataset, date, extent)
+        results += process(dataset, date, extent, bandid)
         os.chdir(pwd)
 
     print "Processs tiles"
