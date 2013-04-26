@@ -251,6 +251,15 @@ def list_sets(args):
 
         print '\n'.join(["%03d:  %s" % (a,b) for (a,b) in zip(range(0,len(adict.keys())), data)])
 
+def display_dates(args):
+    product_dates(args.product, args.version, args.verbose)
+
+def display_bands(args):
+    if args.bandid != None:
+        band_color_definitions(args.product, args.version, args.bandid)
+    else:
+        product_bands(args.product, args.version)
+
 def download_entry(args):
     dataset = args.dataset
     dates = args.date
@@ -293,9 +302,22 @@ if __name__=='__main__':
 
     # create the parser for the "list" command
     parser_list = subparsers.add_parser('info')
-    parser_list.add_argument('dataset', type=str, nargs='?')
-    parser_list.add_argument('date', type=str, nargs='?')
+    parser_list.add_argument('product', type=str, nargs='?')
     parser_list.set_defaults(func=list_sets)
+
+    # create the parser for the "dates" command
+    parser_dates = subparsers.add_parser('dates')
+    parser_dates.add_argument('product', type=str)
+    parser_dates.add_argument('version', type=str)
+    parser_dates.add_argument('--verbose', action='store_true')
+    parser_dates.set_defaults(func=display_dates)
+
+    # create the parser for the "bands" command
+    parser_bands = subparsers.add_parser('bands')
+    parser_bands.add_argument('product', type=str)
+    parser_bands.add_argument('version', type=str)
+    parser_bands.add_argument('bandid', type=int, nargs='?')
+    parser_bands.set_defaults(func=display_bands)
 
     # create the parser for the "list" command
     parser_dl = subparsers.add_parser('download')
@@ -303,8 +325,9 @@ if __name__=='__main__':
     parser_dl.add_argument('--date', type=str, nargs='+')
     parser_dl.add_argument('--tiles', type=str, nargs=1)
     parser_dl.add_argument('--zoom', type=str, nargs=1)
-    parser_dl.add_argument('--bbox', type=str, nargs=4)    
+    parser_dl.add_argument('--bbox', type=str, nargs=4)
     parser_dl.add_argument('--info', action='store_true')
+    parser_dl.add_argument('--band', type=int, nargs='?')
     parser_dl.set_defaults(func=download_entry)
 
     # parse the args and call whatever function was selected
