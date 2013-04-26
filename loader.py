@@ -100,11 +100,10 @@ def download(tiles):
 
     return outputs
 
-def extract_bands(tiles):
+def extract_bands(tiles, bandid):
     outputs = []
-    band_selection = None
     for tile in tiles:
-        band_selection, band = user_select_band(tile, band_selection)
+        band = select_band(tile, bandid)
         filepath,filename = os.path.split(tile)
         bandsha1 = hashlib.md5(band).hexdigest()
 
@@ -179,7 +178,7 @@ def clipit(tiles, extent):
     return outputs
 
 
-def process(dataset, date, extent_ll):
+def process(dataset, date, extent_ll, bandid):
     #extent_ll = ['39.09','-75.77','40.72','-74.10']
 
     p = pyproj.Proj('+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +a=6378137 +b=6378137 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs')
@@ -195,10 +194,10 @@ def process(dataset, date, extent_ll):
     # Download the tiles of DOOM
     rawhdfs = download(tiles)
 
-    print "Select bands"
+    print "Extracting Bands"
 
     # Extract relevant band
-    bandtifs = extract_bands(rawhdfs)
+    bandtifs = extract_bands(rawhdfs, bandid)
 
     print "Merging bands into single image"
 
